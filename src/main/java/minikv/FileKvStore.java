@@ -31,10 +31,7 @@ public class FileKvStore implements KvStore {
         }
 
         try (Stream<String> lines = Files.lines(path)) {
-            lines.forEach((line) -> {
-                if (line.isBlank()) {
-                    return;
-                }
+            lines.filter(line -> !line.isBlank()).forEach((line) -> {
                 String[] tokens = line.split(":", 3);
                 switch (tokens[0].toUpperCase()) {
                     case "SET":
