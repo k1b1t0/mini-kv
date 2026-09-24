@@ -4,7 +4,6 @@ import java.util.Scanner;
 
 import command.Command;
 import command.CommandParser;
-import command.ExitCommand;
 
 public class Main {
     public static void main(String[] args) {
