@@ -16,7 +16,7 @@ public class Main {
             try {
                 command.execute(store);
             } catch (Exception e) {
-                System.out.println(e);
+                System.out.println("-ERR: " + e.getMessage());
             }
         }
     }
