@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import minikv.KvStore;
 
+@CommandName("GET")
 public record GetCommand(String key) implements Command {
     public void execute(KvStore store) {
         try {

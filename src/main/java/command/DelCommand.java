@@ -2,6 +2,7 @@ package command;
 
 import minikv.KvStore;
 
+@CommandName("DEL")
 public record DelCommand(String key) implements Command {
 
     public void execute(KvStore store) {

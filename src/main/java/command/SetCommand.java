@@ -2,6 +2,7 @@ package command;
 
 import minikv.KvStore;
 
+@CommandName("SET")
 public record SetCommand(String key, String value) implements Command {
     public void execute(KvStore store) {
         try {

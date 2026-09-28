@@ -1,14 +1,10 @@
 package minikv;
 
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,14 +12,12 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Stream;
 
 public class FileKvStore implements KvStore, Closeable {
-    int OP_SET = 1;
-    int OP_DEL = 2;
+    byte OP_SET = 1;
+    byte OP_DEL = 2;
     Path path;
     FileChannel fileChannel;
     ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -98,84 +92,80 @@ public class FileKvStore implements KvStore, Closeable {
         writeLock.lock();
         Long offset = fileChannel.size();
 
-        byte op = 1;
         byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
         byte[] valBytes = value.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buffer = ByteBuffer.allocate(9 + keyBytes.length + valBytes.length)
-                .put(op)
+                .put(OP_SET)
                 .putInt(keyBytes.length)
                 .putInt(valBytes.length)
                 .put(keyBytes)
                 .put(valBytes);
 
         buffer.flip();
-        fileChannel.position(offset);
         try {
             while (buffer.hasRemaining()) {
-                fileChannel.write(buffer);
+                offset += fileChannel.write(buffer, offset);
             }
-            store.put(key, offset);
+            store.put(key, offset - buffer.array().length);
         } finally {
             writeLock.unlock();
         }
     }
 
     public Optional<String> get(String key) throws IOException {
-        if (!store.containsKey(key)) {
-            return Optional.empty();
-        }
-
         readLock.lock();
 
-        Long offset = store.get(key);
-        fileChannel.position(offset + 1 + 4);
+        try {
+            if (!store.containsKey(key)) {
+                return Optional.empty();
+            }
 
-        ByteBuffer header = ByteBuffer.allocate(9);
+            Long offset = store.get(key);
 
-        while (header.hasRemaining()) {
-            fileChannel.read(header, offset);
+            ByteBuffer header = ByteBuffer.allocate(9);
+
+            while (header.hasRemaining()) {
+                fileChannel.read(header, offset);
+            }
+
+            header.flip();
+
+            header.get();
+            int keyLength = header.getInt();
+            int valLength = header.getInt();
+
+            ByteBuffer valBuf = ByteBuffer.allocate(valLength);
+            while (valBuf.hasRemaining()) {
+                fileChannel.read(valBuf, offset + 9 + keyLength);
+            }
+            return Optional.ofNullable(new String(valBuf.array(), StandardCharsets.UTF_8));
+        } finally {
+            readLock.unlock();
         }
-
-        header.flip();
-
-        header.get();
-        int keyLength = header.getInt();
-        int valLength = header.getInt();
-
-        ByteBuffer valBuf = ByteBuffer.allocate(valLength);
-        while (valBuf.hasRemaining()) {
-            fileChannel.read(valBuf, offset + 9 + keyLength);
-        }
-
-        readLock.unlock();
-        return Optional.ofNullable(new String(valBuf.array(), StandardCharsets.UTF_8));
     }
 
     public boolean delete(String key) throws IOException {
         writeLock.lock();
         Long offset = fileChannel.size();
 
-        byte op = 2;
         byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buffer = ByteBuffer.allocate(9 + keyBytes.length)
-                .put(op)
+                .put(OP_DEL)
                 .putInt(keyBytes.length)
                 .putInt(0)
                 .put(keyBytes);
 
         buffer.flip();
-        fileChannel.position(offset);
         try {
             while (buffer.hasRemaining()) {
-                fileChannel.write(buffer);
+                offset += fileChannel.write(buffer, offset);
             }
-            store.put(key, offset);
+            store.remove(key);
         } finally {
             writeLock.unlock();
         }
-        store.remove(key);
         return true;
     }
 
