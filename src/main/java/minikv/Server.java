@@ -37,6 +37,7 @@ public class Server {
                 BufferedReader reader = new BufferedReader(
                         new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);) {
+            System.out.println("Socket connected: " + socket.toString());
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.isBlank())
@@ -47,6 +48,7 @@ public class Server {
                 // exit
                 if (response == null) {
                     writer.println("Bye.");
+                    System.out.println("Socket closed: " + socket.toString());
                     break;
                 }
 
