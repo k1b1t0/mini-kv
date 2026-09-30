@@ -5,13 +5,13 @@ import minikv.KvStore;
 @CommandName("DEL")
 public record DelCommand(String key) implements Command {
 
-    public void execute(KvStore store) {
+    public String execute(KvStore store) {
         try {
             store.delete(key);
         } catch (Exception e) {
-            System.out.println(e);
+            return "-ERR: " + e.getMessage();
         }
 
-        System.out.println("+OK");
+        return "+OK";
     }
 }

@@ -4,13 +4,13 @@ import minikv.KvStore;
 
 @CommandName("SET")
 public record SetCommand(String key, String value) implements Command {
-    public void execute(KvStore store) {
+    public String execute(KvStore store) {
         try {
             store.set(key, value);
         } catch (Exception e) {
-            System.out.println(e);
+            return "-ERR: " + e.getMessage();
         }
 
-        System.out.println("+OK");
+        return "+OK";
     }
 }

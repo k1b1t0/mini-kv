@@ -6,8 +6,7 @@ import minikv.KvStore;
 
 @CommandName("EXIT")
 public class ExitCommand implements Command {
-    public void execute(KvStore store) throws IOException {
-        System.out.println("Bye");
-        System.exit(0);
+    public String execute(KvStore store) throws IOException {
+        return null;
     }
 }

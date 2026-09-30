@@ -5,5 +5,5 @@ import minikv.KvStore;
 
 @FunctionalInterface
 public interface Command {
-    void execute(KvStore store) throws IOException;
+    String execute(KvStore store) throws IOException;
 }
